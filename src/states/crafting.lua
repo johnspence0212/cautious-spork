@@ -23,8 +23,7 @@ function CraftingState:enter(craftingSystem)
     self.mouseY = 0
     
     -- Button layout constants
-    self.buttonWidth = 120
-    self.buttonHeight = 60
+    self.buttonSize = 80  -- Perfect square size
     self.buttonSpacing = 20
     self.skillBarY = love.graphics.getHeight() - 100
     
@@ -53,14 +52,14 @@ function CraftingState:update(dt)
     -- Check which skill button is hovered (using CraftingSystem skill data)
     self.hoveredSkill = nil
     local skills = self.craftingSystem:getSkills()
-    local startX = (love.graphics.getWidth() - (5 * self.buttonWidth + 4 * self.buttonSpacing)) / 2
+    local startX = (love.graphics.getWidth() - (5 * self.buttonSize + 4 * self.buttonSpacing)) / 2
     
     for i, skill in ipairs(skills) do
-        local buttonX = startX + (i - 1) * (self.buttonWidth + self.buttonSpacing)
+        local buttonX = startX + (i - 1) * (self.buttonSize + self.buttonSpacing)
         local buttonY = self.skillBarY
         
-        if self.mouseX >= buttonX and self.mouseX <= buttonX + self.buttonWidth and
-           self.mouseY >= buttonY and self.mouseY <= buttonY + self.buttonHeight then
+        if self.mouseX >= buttonX and self.mouseX <= buttonX + self.buttonSize and
+           self.mouseY >= buttonY and self.mouseY <= buttonY + self.buttonSize then
             self.hoveredSkill = i
             break
         end
@@ -134,10 +133,10 @@ function CraftingState:draw()
     love.graphics.print(progressText, progressBarX + (progressBarWidth - progressTextWidth) / 2, progressBarY + 5)
     
     -- Draw skill buttons (using system data)
-    local startX = (width - (5 * self.buttonWidth + 4 * self.buttonSpacing)) / 2
+    local startX = (width - (5 * self.buttonSize + 4 * self.buttonSpacing)) / 2
     
     for i, skill in ipairs(skills) do
-        local buttonX = startX + (i - 1) * (self.buttonWidth + self.buttonSpacing)
+        local buttonX = startX + (i - 1) * (self.buttonSize + self.buttonSpacing)
         local buttonY = self.skillBarY
         
         -- Button background (highlighted if hovered)
@@ -147,17 +146,17 @@ function CraftingState:draw()
         else
             love.graphics.setColor(color)
         end
-        love.graphics.rectangle("fill", buttonX, buttonY, self.buttonWidth, self.buttonHeight)
+        love.graphics.rectangle("fill", buttonX, buttonY, self.buttonSize, self.buttonSize)
         
         -- Button border
         love.graphics.setColor(1, 1, 1, 1)
-        love.graphics.rectangle("line", buttonX, buttonY, self.buttonWidth, self.buttonHeight)
+        love.graphics.rectangle("line", buttonX, buttonY, self.buttonSize, self.buttonSize)
         
         -- Button text
         love.graphics.setFont(self.fonts.normal)
         local keyText = skill.key .. ": " .. skill.name
         local keyTextWidth = self.fonts.normal:getWidth(keyText)
-        love.graphics.print(keyText, buttonX + (self.buttonWidth - keyTextWidth) / 2, buttonY + 10)
+        love.graphics.print(keyText, buttonX + (self.buttonSize - keyTextWidth) / 2, buttonY + (self.buttonSize - self.fonts.normal:getHeight()) / 2)
     end
     
     -- Draw hover tooltip (using system data)
