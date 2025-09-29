@@ -34,6 +34,10 @@ function CraftingState:enter(craftingSystem)
         error("CraftingState: CraftingSystem not found! Make sure GameState passes it as parameter.")
     end
     
+    -- Exit button properties
+    self.exitButtonSize = 30
+    self.exitButtonPadding = 10
+    
     -- Verify we have an active crafting session
     if not self.craftingSystem:isCurrentlyCrafting() then
         print("Warning: Entered CraftingState but no active crafting session!")
@@ -199,6 +203,47 @@ function CraftingState:draw()
         local completeWidth = self.fonts.title:getWidth(completeText)
         love.graphics.print(completeText, (width - completeWidth) / 2, height / 2 - 50)
     end
+    
+    -- Draw exit button
+    self:drawExitButton()
+end
+
+function CraftingState:drawExitButton()
+    local width = love.graphics.getWidth()
+    local buttonSize = self.exitButtonSize
+    local padding = self.exitButtonPadding
+    
+    -- Button position (top right corner)
+    local buttonX = width - buttonSize - padding
+    local buttonY = padding
+    
+    -- Check if mouse is over button
+    local mouseX, mouseY = love.mouse.getPosition()
+    local isHovered = mouseX >= buttonX and mouseX <= buttonX + buttonSize and
+                     mouseY >= buttonY and mouseY <= buttonY + buttonSize
+    
+    -- Button background
+    if isHovered then
+        love.graphics.setColor(0.6, 0.2, 0.2, 0.8)
+    else
+        love.graphics.setColor(0.4, 0.4, 0.4, 0.8)
+    end
+    love.graphics.rectangle("fill", buttonX, buttonY, buttonSize, buttonSize)
+    
+    -- Button border
+    love.graphics.setColor(0.8, 0.8, 0.8, 1)
+    love.graphics.rectangle("line", buttonX, buttonY, buttonSize, buttonSize)
+    
+    -- X symbol
+    love.graphics.setColor(1, 1, 1, 1)
+    local xText = "×"
+    local font = love.graphics.newFont(16)
+    love.graphics.setFont(font)
+    local textWidth = font:getWidth(xText)
+    local textHeight = font:getHeight()
+    love.graphics.print(xText, 
+                       buttonX + (buttonSize - textWidth) / 2, 
+                       buttonY + (buttonSize - textHeight) / 2)
 end
 
 function CraftingState:keypressed(key, scancode, isrepeat)
@@ -226,6 +271,24 @@ function CraftingState:handleEscape()
 end
 
 -- useSkill method removed - now handled by CraftingSystem
+
+function CraftingState:mousepressed(x, y, button)
+    if button == 1 then -- Left mouse button
+        -- Check if exit button was clicked
+        local width = love.graphics.getWidth()
+        local buttonSize = self.exitButtonSize
+        local padding = self.exitButtonPadding
+        local buttonX = width - buttonSize - padding
+        local buttonY = padding
+        
+        if x >= buttonX and x <= buttonX + buttonSize and
+           y >= buttonY and y <= buttonY + buttonSize then
+            -- Exit button clicked - return to crafting select
+            self.craftingSystem:stopCrafting()
+            StateManager:switch('crafting_select', self.craftingSystem)
+        end
+    end
+end
 
 function CraftingState:mousemoved(x, y, dx, dy, istouch)
     -- Mouse position is updated in update() function

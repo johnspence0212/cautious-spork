@@ -128,6 +128,9 @@ end
 function GameState:keypressed(key, scancode, isrepeat)
     if key == "m" then
         StateManager:switch('menu')
+    elseif key == "i" then
+        -- Open inventory
+        StateManager:switch('inventory', 'game')
     elseif key == "e" and self.nearInteractable then
         -- Interact with anvil - switch to crafting select state
         StateManager:switch('crafting_select', self.craftingSystem)
