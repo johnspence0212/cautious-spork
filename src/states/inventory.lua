@@ -4,10 +4,20 @@ function InventoryState:enter(previousState)
     self.previousState = previousState or 'game'
     self.font = love.graphics.newFont(18)
     self.titleFont = love.graphics.newFont(24)
+    self.tabFont = love.graphics.newFont(16)
     
     -- Exit button properties
     self.exitButtonSize = 30
     self.exitButtonPadding = 10
+    
+    -- Tab system
+    self.activeTab = 'bag' -- 'bag' or 'recipes'
+    self.tabs = {
+        {id = 'bag', name = 'Bag of Holding'},
+        {id = 'recipes', name = 'Recipe Codex'}
+    }
+    self.tabHeight = 40
+    self.tabPadding = 10
 end
 
 function InventoryState:update(dt)
@@ -22,38 +32,23 @@ function InventoryState:draw()
     love.graphics.setColor(0, 0, 0, 0.8)
     love.graphics.rectangle("fill", 0, 0, width, height)
     
-    -- Main inventory panel
-    local panelWidth = 400
-    local panelHeight = 300
+    -- Main inventory panel (larger for tabs)
+    local panelWidth = 500
+    local panelHeight = 400
     local panelX = (width - panelWidth) / 2
     local panelY = (height - panelHeight) / 2
     
-    -- Panel background
+    -- Draw tabs
+    self:drawTabs(panelX, panelY, panelWidth)
+    
+    -- Panel background (below tabs)
     love.graphics.setColor(0.2, 0.2, 0.3, 1)
-    love.graphics.rectangle("fill", panelX, panelY, panelWidth, panelHeight)
+    love.graphics.rectangle("fill", panelX, panelY + self.tabHeight, panelWidth, panelHeight - self.tabHeight)
     love.graphics.setColor(0.6, 0.6, 0.7, 1)
-    love.graphics.rectangle("line", panelX, panelY, panelWidth, panelHeight)
+    love.graphics.rectangle("line", panelX, panelY + self.tabHeight, panelWidth, panelHeight - self.tabHeight)
     
-    -- Title
-    love.graphics.setColor(1, 1, 1, 1)
-    love.graphics.setFont(self.titleFont)
-    local title = "Inventory"
-    local titleWidth = self.titleFont:getWidth(title)
-    love.graphics.print(title, panelX + (panelWidth - titleWidth) / 2, panelY + 20)
-    
-    -- Inventory content (placeholder)
-    love.graphics.setFont(self.font)
-    love.graphics.setColor(0.8, 0.8, 0.8, 1)
-    local content = {
-        "Your inventory is empty.",
-        "",
-        "Press 'I' to close inventory",
-        "Or click the X button"
-    }
-    
-    for i, line in ipairs(content) do
-        love.graphics.print(line, panelX + 20, panelY + 80 + (i - 1) * 25)
-    end
+    -- Draw tab content
+    self:drawTabContent(panelX, panelY + self.tabHeight, panelWidth, panelHeight - self.tabHeight)
     
     -- Draw exit button (X button in top right)
     self:drawExitButton()
@@ -117,6 +112,101 @@ function InventoryState:mousepressed(x, y, button)
            y >= buttonY and y <= buttonY + buttonSize then
             -- Exit button clicked - return to previous state
             StateManager:switch(self.previousState)
+            return
+        end
+        
+        -- Check if a tab was clicked
+        local panelWidth = 500
+        local panelX = (width - panelWidth) / 2
+        local panelY = (love.graphics.getHeight() - 400) / 2
+        self:handleTabClick(x, y, panelX, panelY, panelWidth)
+    end
+end
+
+function InventoryState:drawTabs(panelX, panelY, panelWidth)
+    local tabWidth = panelWidth / #self.tabs
+    
+    for i, tab in ipairs(self.tabs) do
+        local tabX = panelX + (i - 1) * tabWidth
+        local isActive = tab.id == self.activeTab
+        
+        -- Tab background
+        if isActive then
+            love.graphics.setColor(0.3, 0.3, 0.4, 1) -- Active tab color
+        else
+            love.graphics.setColor(0.15, 0.15, 0.2, 1) -- Inactive tab color
+        end
+        love.graphics.rectangle("fill", tabX, panelY, tabWidth, self.tabHeight)
+        
+        -- Tab border
+        love.graphics.setColor(0.6, 0.6, 0.7, 1)
+        love.graphics.rectangle("line", tabX, panelY, tabWidth, self.tabHeight)
+        
+        -- Tab text
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.setFont(self.tabFont)
+        local textWidth = self.tabFont:getWidth(tab.name)
+        local textHeight = self.tabFont:getHeight()
+        love.graphics.print(tab.name, 
+                           tabX + (tabWidth - textWidth) / 2, 
+                           panelY + (self.tabHeight - textHeight) / 2)
+    end
+end
+
+function InventoryState:drawTabContent(contentX, contentY, contentWidth, contentHeight)
+    love.graphics.setFont(self.font)
+    love.graphics.setColor(0.8, 0.8, 0.8, 1)
+    
+    if self.activeTab == 'bag' then
+        -- Bag of Holding content
+        local bagContent = {
+            "=== Bag of Holding ===",
+            "",
+            "Your bag is empty.",
+            "",
+            "Items you collect will appear here.",
+            "",
+            "Press 'I' to close inventory",
+            "Or click the X button"
+        }
+        
+        for i, line in ipairs(bagContent) do
+            love.graphics.print(line, contentX + 20, contentY + 20 + (i - 1) * 25)
+        end
+        
+    elseif self.activeTab == 'recipes' then
+        -- Recipe Codex content
+        local recipeContent = {
+            "=== Recipe Codex ===",
+            "",
+            "Known Recipes:",
+            "• Iron Sword",
+            "• Healing Potion", 
+            "• Magic Scroll",
+            "",
+            "Use the anvil to craft items.",
+            "",
+            "Press 'I' to close inventory"
+        }
+        
+        for i, line in ipairs(recipeContent) do
+            love.graphics.print(line, contentX + 20, contentY + 20 + (i - 1) * 25)
+        end
+    end
+end
+
+function InventoryState:handleTabClick(x, y, panelX, panelY, panelWidth)
+    -- Check if click is within tab area
+    if y >= panelY and y <= panelY + self.tabHeight then
+        local tabWidth = panelWidth / #self.tabs
+        
+        for i, tab in ipairs(self.tabs) do
+            local tabX = panelX + (i - 1) * tabWidth
+            
+            if x >= tabX and x <= tabX + tabWidth then
+                self.activeTab = tab.id
+                break
+            end
         end
     end
 end
