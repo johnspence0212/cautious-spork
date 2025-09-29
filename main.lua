@@ -68,6 +68,15 @@ function StateManager:mousemoved(x, y, dx, dy, istouch)
     end
 end
 
+function StateManager:handleEscape()
+    -- Let current state handle escape first
+    if self.current and self.current.keypressed then
+        self.current:keypressed("escape", "escape", false)
+        return true -- State handled it
+    end
+    return false -- State didn't handle it, allow global quit
+end
+
 -- Global state manager accessible to all states
 _G.StateManager = StateManager
 
@@ -94,12 +103,22 @@ function love.draw()
 end
 
 function love.keypressed(key, scancode, isrepeat)
-    -- Global quit functionality
     if key == "escape" then
-        love.event.quit()
+        -- Let current state handle escape first
+        if StateManager.current and StateManager.current.handleEscape then
+            -- State has custom escape handling
+            StateManager.current:handleEscape()
+        elseif StateManager.current and StateManager.current.keypressed then
+            -- State has normal keypressed handling
+            StateManager.current:keypressed(key, scancode, isrepeat)
+        else
+            -- No state or state doesn't handle input - quit game
+            love.event.quit()
+        end
+    else
+        -- Forward all other keys to state
+        StateManager:keypressed(key, scancode, isrepeat)
     end
-    
-    StateManager:keypressed(key, scancode, isrepeat)
 end
 
 function love.keyreleased(key, scancode)

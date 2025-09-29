@@ -1,72 +1,44 @@
+--[[
+    CraftingState - UI layer for active crafting
+    
+    This is now a "thin" state that focuses only on:
+    - Rendering the crafting progress UI
+    - Handling input for skill usage
+    - Delegating all logic to CraftingSystem
+--]]
+
 local CraftingState = {}
 
-function CraftingState:enter(recipe)
-    self.recipe = recipe or {
-        name = "Unknown Item",
-        materials = {"Unknown"},
-        description = "No recipe provided"
-    }
-    
+function CraftingState:enter(craftingSystem)
+    -- UI resources
     self.fonts = {
         title = love.graphics.newFont(24),
         normal = love.graphics.newFont(16),
         small = love.graphics.newFont(14)
     }
     
-    -- Crafting progress
-    self.progress = 0
-    self.maxProgress = 100
-    self.isCompleted = false
-    
-    -- Skill buttons (1-5)
-    self.skills = {
-        {
-            key = "1",
-            name = "Forge",
-            description = "+25 to progress",
-            progressBonus = 25,
-            color = {0.8, 0.2, 0.2, 1} -- Red
-        },
-        {
-            key = "2", 
-            name = "Temper",
-            description = "+15 to progress",
-            progressBonus = 15,
-            color = {0.2, 0.8, 0.2, 1} -- Green
-        },
-        {
-            key = "3",
-            name = "Polish",
-            description = "+10 to progress",
-            progressBonus = 10,
-            color = {0.2, 0.2, 0.8, 1} -- Blue
-        },
-        {
-            key = "4",
-            name = "Sharpen",
-            description = "+20 to progress",
-            progressBonus = 20,
-            color = {0.8, 0.8, 0.2, 1} -- Yellow
-        },
-        {
-            key = "5",
-            name = "Enchant",
-            description = "+30 to progress",
-            progressBonus = 30,
-            color = {0.8, 0.2, 0.8, 1} -- Magenta
-        }
-    }
-    
-    -- UI state
+    -- UI state for interaction
     self.hoveredSkill = nil
     self.mouseX = 0
     self.mouseY = 0
     
-    -- Button layout
+    -- Button layout constants
     self.buttonWidth = 120
     self.buttonHeight = 60
     self.buttonSpacing = 20
     self.skillBarY = love.graphics.getHeight() - 100
+    
+    -- Get reference to the crafting system (passed as parameter or from global)
+    self.craftingSystem = craftingSystem or _G.CraftingSystem
+    if not self.craftingSystem then
+        error("CraftingState: CraftingSystem not found! Make sure GameState passes it as parameter.")
+    end
+    
+    -- Verify we have an active crafting session
+    if not self.craftingSystem:isCurrentlyCrafting() then
+        print("Warning: Entered CraftingState but no active crafting session!")
+        -- Could auto-return to previous state here
+    end
 end
 
 function CraftingState:update(dt)
@@ -74,11 +46,12 @@ function CraftingState:update(dt)
     self.mouseX = love.mouse.getX()
     self.mouseY = love.mouse.getY()
     
-    -- Check which skill button is hovered
+    -- Check which skill button is hovered (using CraftingSystem skill data)
     self.hoveredSkill = nil
+    local skills = self.craftingSystem:getSkills()
     local startX = (love.graphics.getWidth() - (5 * self.buttonWidth + 4 * self.buttonSpacing)) / 2
     
-    for i, skill in ipairs(self.skills) do
+    for i, skill in ipairs(skills) do
         local buttonX = startX + (i - 1) * (self.buttonWidth + self.buttonSpacing)
         local buttonY = self.skillBarY
         
@@ -89,16 +62,24 @@ function CraftingState:update(dt)
         end
     end
     
-    -- Check if crafting is completed
-    if self.progress >= self.maxProgress and not self.isCompleted then
-        self.isCompleted = true
-        -- Could add completion effects here
-    end
+    -- The system itself tracks completion state, no need to duplicate logic here
 end
 
 function CraftingState:draw()
     local width = love.graphics.getWidth()
     local height = love.graphics.getHeight()
+    
+    -- Get all data from CraftingSystem
+    local craftingState = self.craftingSystem:getCraftingState()
+    local recipe = craftingState.activeRecipe
+    local skills = self.craftingSystem:getSkills()
+    
+    -- Safety check
+    if not recipe then
+        love.graphics.setColor(1, 0, 0, 1)
+        love.graphics.print("Error: No active recipe!", 10, 10)
+        return
+    end
     
     -- Dark crafting background
     love.graphics.clear(0.1, 0.05, 0.02, 1)
@@ -106,24 +87,24 @@ function CraftingState:draw()
     -- Draw recipe being crafted
     love.graphics.setColor(1, 0.8, 0.4, 1) -- Golden
     love.graphics.setFont(self.fonts.title)
-    local titleText = "Crafting: " .. self.recipe.name
+    local titleText = "Crafting: " .. recipe.name
     local titleWidth = self.fonts.title:getWidth(titleText)
     love.graphics.print(titleText, (width - titleWidth) / 2, 50)
     
     -- Draw recipe description
     love.graphics.setColor(0.8, 0.8, 0.8, 1)
     love.graphics.setFont(self.fonts.normal)
-    local descWidth = self.fonts.normal:getWidth(self.recipe.description)
-    love.graphics.print(self.recipe.description, (width - descWidth) / 2, 90)
+    local descWidth = self.fonts.normal:getWidth(recipe.description)
+    love.graphics.print(recipe.description, (width - descWidth) / 2, 90)
     
     -- Draw materials needed
     love.graphics.setColor(0.6, 0.6, 0.6, 1)
     love.graphics.setFont(self.fonts.small)
-    local materialsText = "Materials: " .. table.concat(self.recipe.materials, ", ")
+    local materialsText = "Materials: " .. table.concat(recipe.materials, ", ")
     local materialsWidth = self.fonts.small:getWidth(materialsText)
     love.graphics.print(materialsText, (width - materialsWidth) / 2, 115)
     
-    -- Draw progress bar
+    -- Draw progress bar (using system data)
     local progressBarWidth = 400
     local progressBarHeight = 30
     local progressBarX = (width - progressBarWidth) / 2
@@ -134,7 +115,7 @@ function CraftingState:draw()
     love.graphics.rectangle("fill", progressBarX, progressBarY, progressBarWidth, progressBarHeight)
     
     -- Progress bar fill
-    local fillWidth = (self.progress / self.maxProgress) * progressBarWidth
+    local fillWidth = (craftingState.progress / craftingState.maxProgress) * progressBarWidth
     love.graphics.setColor(0.2, 0.8, 0.2, 1) -- Green progress
     love.graphics.rectangle("fill", progressBarX, progressBarY, fillWidth, progressBarHeight)
     
@@ -144,14 +125,14 @@ function CraftingState:draw()
     
     -- Progress text
     love.graphics.setFont(self.fonts.normal)
-    local progressText = math.floor(self.progress) .. "/" .. self.maxProgress
+    local progressText = math.floor(craftingState.progress) .. "/" .. craftingState.maxProgress
     local progressTextWidth = self.fonts.normal:getWidth(progressText)
     love.graphics.print(progressText, progressBarX + (progressBarWidth - progressTextWidth) / 2, progressBarY + 5)
     
-    -- Draw skill buttons
+    -- Draw skill buttons (using system data)
     local startX = (width - (5 * self.buttonWidth + 4 * self.buttonSpacing)) / 2
     
-    for i, skill in ipairs(self.skills) do
+    for i, skill in ipairs(skills) do
         local buttonX = startX + (i - 1) * (self.buttonWidth + self.buttonSpacing)
         local buttonY = self.skillBarY
         
@@ -175,9 +156,9 @@ function CraftingState:draw()
         love.graphics.print(keyText, buttonX + (self.buttonWidth - keyTextWidth) / 2, buttonY + 10)
     end
     
-    -- Draw hover tooltip
+    -- Draw hover tooltip (using system data)
     if self.hoveredSkill then
-        local skill = self.skills[self.hoveredSkill]
+        local skill = skills[self.hoveredSkill]
         local tooltipText = skill.description
         local tooltipWidth = self.fonts.small:getWidth(tooltipText) + 20
         local tooltipHeight = 30
@@ -204,14 +185,14 @@ function CraftingState:draw()
     -- Draw instructions
     love.graphics.setColor(1, 1, 1, 1)
     love.graphics.setFont(self.fonts.small)
-    if self.isCompleted then
+    if craftingState.isCompleted then
         love.graphics.print("Crafting Complete! Press ESC to return to game", 10, 10)
     else
         love.graphics.print("Use skills 1-5 to craft the item. Press ESC to cancel crafting.", 10, 10)
     end
     
     -- Draw completion message
-    if self.isCompleted then
+    if craftingState.isCompleted then
         love.graphics.setColor(0, 1, 0, 1) -- Bright green
         love.graphics.setFont(self.fonts.title)
         local completeText = "CRAFTING COMPLETE!"
@@ -222,26 +203,29 @@ end
 
 function CraftingState:keypressed(key, scancode, isrepeat)
     if key == "escape" then
-        -- Return to game (or crafting select if you want)
+        -- Stop crafting and return to game
+        self.craftingSystem:stopCrafting()
         StateManager:switch('game')
     else
-        -- Check skill buttons
-        for i, skill in ipairs(self.skills) do
-            if key == skill.key and not self.isCompleted then
-                self:useSkill(skill)
-                break
+        -- Use CraftingSystem to handle skill usage
+        if self.craftingSystem:useSkillByKey(key) then
+            -- Skill was used successfully
+            -- Check if crafting completed
+            if self.craftingSystem:isCraftingCompleted() then
+                -- Could show completion animation or delay here
+                -- For now, let the user manually exit
             end
         end
     end
 end
 
-function CraftingState:useSkill(skill)
-    -- Add progress
-    self.progress = math.min(self.maxProgress, self.progress + skill.progressBonus)
-    
-    -- Could add skill-specific effects or animations here
-    print("Used " .. skill.name .. " - Progress: " .. self.progress .. "/" .. self.maxProgress)
+function CraftingState:handleEscape()
+    -- Custom escape handling - always return to game, never quit
+    self.craftingSystem:stopCrafting()
+    StateManager:switch('game')
 end
+
+-- useSkill method removed - now handled by CraftingSystem
 
 function CraftingState:mousemoved(x, y, dx, dy, istouch)
     -- Mouse position is updated in update() function

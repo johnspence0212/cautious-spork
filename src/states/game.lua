@@ -1,4 +1,5 @@
 local Anvil = require('src.entities.anvil')
+local CraftingSystem = require('src.systems.crafting')
 
 local GameState = {}
 
@@ -19,6 +20,23 @@ function GameState:enter()
     
     -- Create the anvil (cornerstone object)
     self.anvil = Anvil:new(200, 150)
+    
+    -- Initialize CraftingSystem and make it globally accessible
+    self.craftingSystem = CraftingSystem:new()
+    _G.CraftingSystem = self.craftingSystem
+    
+    -- Set up crafting system event callbacks
+    self.craftingSystem:setOnCraftingComplete(function(recipe)
+        print("GameState: Crafting completed - " .. recipe.name)
+        -- Could add inventory system integration here
+    end)
+    
+    self.craftingSystem:setOnProgressChanged(function(progress, maxProgress, delta)
+        -- Could add sound effects or visual feedback here
+        if delta > 0 then
+            print("GameState: Progress increased by " .. delta)
+        end
+    end)
     
     -- Interaction state
     self.nearInteractable = false
@@ -51,6 +69,9 @@ function GameState:update(dt)
     
     -- Update anvil (check for player proximity)
     self.anvil:update(dt, self.player.x + self.player.width/2, self.player.y + self.player.height/2)
+    
+    -- Update CraftingSystem
+    self.craftingSystem:update(dt)
     
     -- Check interaction state
     if self.anvil:canInteract(self.player.x + self.player.width/2, self.player.y + self.player.height/2) then
@@ -86,6 +107,13 @@ function GameState:draw()
     -- Player position
     love.graphics.print("Player: (" .. math.floor(self.player.x) .. ", " .. math.floor(self.player.y) .. ")", 10, 50)
     
+    -- CraftingSystem status
+    local craftingState = self.craftingSystem:getCraftingState()
+    if craftingState.isActive then
+        love.graphics.print("Crafting: " .. craftingState.activeRecipe.name .. " (" .. 
+                           math.floor(craftingState.progress) .. "/" .. craftingState.maxProgress .. ")", 10, 70)
+    end
+    
     -- Movement instructions
     love.graphics.print("Use WASD or Arrow Keys to move", 10, love.graphics.getHeight() - 50)
     
@@ -102,12 +130,21 @@ function GameState:keypressed(key, scancode, isrepeat)
         StateManager:switch('menu')
     elseif key == "e" and self.nearInteractable then
         -- Interact with anvil - switch to crafting select state
-        StateManager:switch('crafting_select')
+        StateManager:switch('crafting_select', self.craftingSystem)
     end
 end
 
+function GameState:handleEscape()
+    -- From game state, ESC should quit the game
+    love.event.quit()
+end
+
 function GameState:exit()
-    -- Clean up any resources if needed
+    -- Clean up CraftingSystem
+    if self.craftingSystem then
+        self.craftingSystem:stopCrafting()
+        _G.CraftingSystem = nil -- Remove global reference
+    end
 end
 
 return GameState

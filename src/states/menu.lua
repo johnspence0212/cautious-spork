@@ -36,6 +36,11 @@ function MenuState:keypressed(key, scancode, isrepeat)
     end
 end
 
+function MenuState:handleEscape()
+    -- From menu state, ESC should quit the game
+    love.event.quit()
+end
+
 function MenuState:exit()
     -- Clean up any resources if needed
 end
