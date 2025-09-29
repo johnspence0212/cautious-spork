@@ -1,3 +1,5 @@
+local ItemCard = require('src.ui.item_card')
+
 local InventoryState = {}
 
 function InventoryState:enter(previousState)
@@ -18,6 +20,11 @@ function InventoryState:enter(previousState)
     }
     self.tabHeight = 40
     self.tabPadding = 10
+    
+    -- Scrolling and selection
+    self.scrollOffset = 0
+    self.selectedItemIndex = nil
+    self.hoveredItemIndex = nil
 end
 
 function InventoryState:update(dt)
@@ -120,6 +127,20 @@ function InventoryState:mousepressed(x, y, button)
         local panelX = (width - panelWidth) / 2
         local panelY = (love.graphics.getHeight() - 400) / 2
         self:handleTabClick(x, y, panelX, panelY, panelWidth)
+        
+        -- Check if an item card was clicked (for bag tab)
+        if self.activeTab == 'bag' and _G.PlayerState and _G.PlayerState:hasItems() then
+            local items = _G.PlayerState:getInventoryItems()
+            local contentX = panelX
+            local contentY = panelY + self.tabHeight
+            local contentWidth = panelWidth
+            
+            local clickedIndex = ItemCard:getClickedCardIndex(x, y, items, contentX, contentY, contentWidth, self.scrollOffset)
+            if clickedIndex then
+                self.selectedItemIndex = clickedIndex
+                print("Selected item: " .. items[clickedIndex].name)
+            end
+        end
     end
 end
 
@@ -154,28 +175,52 @@ function InventoryState:drawTabs(panelX, panelY, panelWidth)
 end
 
 function InventoryState:drawTabContent(contentX, contentY, contentWidth, contentHeight)
-    love.graphics.setFont(self.font)
-    love.graphics.setColor(0.8, 0.8, 0.8, 1)
-    
     if self.activeTab == 'bag' then
-        -- Bag of Holding content
-        local bagContent = {
-            "=== Bag of Holding ===",
-            "",
-            "Your bag is empty.",
-            "",
-            "Items you collect will appear here.",
-            "",
-            "Press 'I' to close inventory",
-            "Or click the X button"
-        }
-        
-        for i, line in ipairs(bagContent) do
-            love.graphics.print(line, contentX + 20, contentY + 20 + (i - 1) * 25)
+        -- Get items from player state
+        if _G.PlayerState and _G.PlayerState:hasItems() then
+            local items = _G.PlayerState:getInventoryItems()
+            
+            -- Title
+            love.graphics.setColor(0.9, 0.9, 0.9, 1)
+            love.graphics.setFont(self.titleFont)
+            local titleText = "Bag of Holding (" .. #items .. " items)"
+            local titleWidth = self.titleFont:getWidth(titleText)
+            love.graphics.print(titleText, contentX + (contentWidth - titleWidth) / 2, contentY + 10)
+            
+            -- Draw scrollable item cards
+            ItemCard:drawScrollableGrid(items, contentX, contentY, contentWidth, contentHeight, self.scrollOffset, {
+                selectedIndex = self.selectedItemIndex,
+                hoveredIndex = self.hoveredItemIndex,
+                showIcons = false
+            })
+            
+            -- Draw scrollbar if needed
+            self:drawScrollbar(contentX, contentY, contentWidth, contentHeight, #items)
+            
+        else
+            -- Empty bag message
+            love.graphics.setColor(0.7, 0.7, 0.7, 1)
+            love.graphics.setFont(self.titleFont)
+            local emptyText = "Your Bag is Empty"
+            local emptyWidth = self.titleFont:getWidth(emptyText)
+            love.graphics.print(emptyText, contentX + (contentWidth - emptyWidth) / 2, contentY + 80)
+            
+            love.graphics.setFont(self.font)
+            local hintText = "Craft items at the anvil to fill your bag!"
+            local hintWidth = self.font:getWidth(hintText)
+            love.graphics.print(hintText, contentX + (contentWidth - hintWidth) / 2, contentY + 120)
         end
+        
+        -- Instructions at bottom
+        love.graphics.setColor(0.6, 0.6, 0.6, 1)
+        love.graphics.setFont(love.graphics.newFont(14))
+        local instructions = "Press 'I' to close • Click X to exit"
+        love.graphics.print(instructions, contentX + 20, contentY + contentHeight - 25)
         
     elseif self.activeTab == 'recipes' then
         -- Recipe Codex content
+        love.graphics.setFont(self.font)
+        love.graphics.setColor(0.8, 0.8, 0.8, 1)
         local recipeContent = {
             "=== Recipe Codex ===",
             "",
@@ -208,6 +253,60 @@ function InventoryState:handleTabClick(x, y, panelX, panelY, panelWidth)
                 break
             end
         end
+    end
+end
+
+function InventoryState:drawScrollbar(contentX, contentY, contentWidth, contentHeight, itemCount)
+    if itemCount == 0 then return end
+    
+    local maxScroll = ItemCard:getMaxScrollOffset(itemCount, contentWidth, contentHeight)
+    if maxScroll <= 0 then return end -- No scrolling needed
+    
+    -- Scrollbar dimensions
+    local scrollbarWidth = 8
+    local scrollbarX = contentX + contentWidth - scrollbarWidth - 5
+    local scrollbarY = contentY + 60
+    local scrollbarHeight = contentHeight - 85
+    
+    -- Scrollbar track
+    love.graphics.setColor(0.2, 0.2, 0.2, 0.5)
+    love.graphics.rectangle("fill", scrollbarX, scrollbarY, scrollbarWidth, scrollbarHeight)
+    
+    -- Scrollbar thumb
+    local thumbHeight = math.max(20, scrollbarHeight * (scrollbarHeight / (scrollbarHeight + maxScroll)))
+    local thumbY = scrollbarY + (self.scrollOffset / maxScroll) * (scrollbarHeight - thumbHeight)
+    
+    love.graphics.setColor(0.6, 0.6, 0.6, 0.8)
+    love.graphics.rectangle("fill", scrollbarX, thumbY, scrollbarWidth, thumbHeight, 2, 2)
+end
+
+function InventoryState:mousemoved(x, y)
+    -- Update hovered item for bag tab
+    if self.activeTab == 'bag' and _G.PlayerState and _G.PlayerState:hasItems() then
+        local items = _G.PlayerState:getInventoryItems()
+        local panelWidth = 500
+        local panelHeight = 400
+        local contentX = (love.graphics.getWidth() - panelWidth) / 2
+        local contentY = (love.graphics.getHeight() - panelHeight) / 2 + self.tabHeight
+        local contentWidth = panelWidth
+        
+        self.hoveredItemIndex = ItemCard:getClickedCardIndex(x, y, items, contentX, contentY, contentWidth, self.scrollOffset)
+    end
+end
+
+function InventoryState:wheelmoved(x, y)
+    -- Handle scrolling in bag tab
+    if self.activeTab == 'bag' and _G.PlayerState and _G.PlayerState:hasItems() then
+        local items = _G.PlayerState:getInventoryItems()
+        local panelWidth = 500
+        local panelHeight = 400
+        local contentWidth = panelWidth
+        local contentHeight = panelHeight - self.tabHeight
+        
+        local maxScroll = ItemCard:getMaxScrollOffset(#items, contentWidth, contentHeight)
+        local scrollSpeed = 30
+        
+        self.scrollOffset = math.max(0, math.min(maxScroll, self.scrollOffset - y * scrollSpeed))
     end
 end
 

@@ -28,6 +28,10 @@ function GameState:enter()
     -- Set up crafting system event callbacks
     self.craftingSystem:setOnCraftingComplete(function(recipe)
         print("GameState: Crafting completed - " .. recipe.name)
+        -- Add crafted item to player inventory
+        if _G.PlayerState then
+            _G.PlayerState:onItemCrafted(recipe)
+        end
         -- Could add inventory system integration here
     end)
     

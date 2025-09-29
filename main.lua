@@ -5,6 +5,9 @@ local CraftingSelectState = require('src.states.crafting_select')
 local CraftingState = require('src.states.crafting')
 local InventoryState = require('src.states.inventory')
 
+-- Import player state system
+local PlayerState = require('src.systems.player')
+
 -- Game state manager
 local StateManager = {
     current = nil,
@@ -84,6 +87,9 @@ _G.StateManager = StateManager
 function love.load()
     -- Set up graphics
     love.graphics.setDefaultFilter("nearest", "nearest")
+    
+    -- Initialize global player state
+    _G.PlayerState = PlayerState:new()
     
     -- Register our states
     StateManager:register('menu', MenuState)
