@@ -1,6 +1,8 @@
 -- Import our state files
 local MenuState = require('src.states.menu')
 local GameState = require('src.states.game')
+local CraftingSelectState = require('src.states.crafting_select')
+local CraftingState = require('src.states.crafting')
 
 -- Game state manager
 local StateManager = {
@@ -60,6 +62,12 @@ function StateManager:mousereleased(x, y, button, istouch, presses)
     end
 end
 
+function StateManager:mousemoved(x, y, dx, dy, istouch)
+    if self.current and self.current.mousemoved then
+        self.current:mousemoved(x, y, dx, dy, istouch)
+    end
+end
+
 -- Global state manager accessible to all states
 _G.StateManager = StateManager
 
@@ -70,6 +78,8 @@ function love.load()
     -- Register our states
     StateManager:register('menu', MenuState)
     StateManager:register('game', GameState)
+    StateManager:register('crafting_select', CraftingSelectState)
+    StateManager:register('crafting', CraftingState)
     
     -- Start with the menu state
     StateManager:switch('menu')
@@ -102,4 +112,8 @@ end
 
 function love.mousereleased(x, y, button, istouch, presses)
     StateManager:mousereleased(x, y, button, istouch, presses)
+end
+
+function love.mousemoved(x, y, dx, dy, istouch)
+    StateManager:mousemoved(x, y, dx, dy, istouch)
 end
