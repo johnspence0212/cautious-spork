@@ -72,6 +72,12 @@ function StateManager:mousemoved(x, y, dx, dy, istouch)
     end
 end
 
+function StateManager:wheelmoved(x, y)
+    if self.current and self.current.wheelmoved then
+        self.current:wheelmoved(x, y)
+    end
+end
+
 function StateManager:handleEscape()
     -- Let current state handle escape first
     if self.current and self.current.keypressed then
@@ -143,4 +149,8 @@ end
 
 function love.mousemoved(x, y, dx, dy, istouch)
     StateManager:mousemoved(x, y, dx, dy, istouch)
+end
+
+function love.wheelmoved(x, y)
+    StateManager:wheelmoved(x, y)
 end
