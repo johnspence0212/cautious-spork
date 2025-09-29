@@ -1,4 +1,5 @@
 local Anvil = require('src.entities.anvil')
+local GuildMerchant = require('src.entities.guild_merchant')
 local CraftingSystem = require('src.systems.crafting')
 
 local GameState = {}
@@ -20,6 +21,9 @@ function GameState:enter()
     
     -- Create the anvil (cornerstone object)
     self.anvil = Anvil:new(200, 150)
+    
+    -- Create the guild merchant
+    self.guildMerchant = GuildMerchant:new(500, 200)
     
     -- Initialize CraftingSystem and make it globally accessible
     self.craftingSystem = CraftingSystem:new()
@@ -74,6 +78,9 @@ function GameState:update(dt)
     -- Update anvil (check for player proximity)
     self.anvil:update(dt, self.player.x + self.player.width/2, self.player.y + self.player.height/2)
     
+    -- Update guild merchant (check for player proximity)
+    self.guildMerchant:update(dt, self.player.x + self.player.width/2, self.player.y + self.player.height/2)
+    
     -- Update CraftingSystem
     self.craftingSystem:update(dt)
     
@@ -81,9 +88,15 @@ function GameState:update(dt)
     if self.anvil:canInteract(self.player.x + self.player.width/2, self.player.y + self.player.height/2) then
         self.nearInteractable = true
         self.interactionPrompt = self.anvil:getInteractionPrompt()
+        self.interactableType = 'anvil'
+    elseif self.guildMerchant:canInteract(self.player.x + self.player.width/2, self.player.y + self.player.height/2) then
+        self.nearInteractable = true
+        self.interactionPrompt = self.guildMerchant:getInteractionPrompt()
+        self.interactableType = 'guild_merchant'
     else
         self.nearInteractable = false
         self.interactionPrompt = ""
+        self.interactableType = nil
     end
 end
 
@@ -93,6 +106,9 @@ function GameState:draw()
     
     -- Draw anvil first (so it appears behind player)
     self.anvil:draw()
+    
+    -- Draw guild merchant
+    self.guildMerchant:draw()
     
     -- Draw player
     love.graphics.setColor(self.player.color)
@@ -136,8 +152,13 @@ function GameState:keypressed(key, scancode, isrepeat)
         -- Open inventory
         StateManager:switch('inventory', 'game')
     elseif key == "e" and self.nearInteractable then
-        -- Interact with anvil - switch to crafting select state
-        StateManager:switch('crafting_select', self.craftingSystem)
+        if self.interactableType == 'anvil' then
+            -- Interact with anvil - switch to crafting select state
+            StateManager:switch('crafting_select', self.craftingSystem)
+        elseif self.interactableType == 'guild_merchant' then
+            -- Interact with guild merchant - switch to guild state
+            StateManager:switch('guild', 'game')
+        end
     end
 end
 

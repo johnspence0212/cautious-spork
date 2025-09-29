@@ -4,6 +4,7 @@ local GameState = require('src.states.game')
 local CraftingSelectState = require('src.states.crafting_select')
 local CraftingState = require('src.states.crafting')
 local InventoryState = require('src.states.inventory')
+local GuildState = require('src.states.guild')
 
 -- Import player state system
 local PlayerState = require('src.systems.player')
@@ -103,6 +104,7 @@ function love.load()
     StateManager:register('crafting_select', CraftingSelectState)
     StateManager:register('crafting', CraftingState)
     StateManager:register('inventory', InventoryState)
+    StateManager:register('guild', GuildState)
     
     -- Start with the menu state
     StateManager:switch('menu')

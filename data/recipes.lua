@@ -31,7 +31,9 @@ local recipes = {
         category = "Weapons",
         unlockLevel = 1,
         craftTime = 300, -- 5 minutes
-        value = 50
+        value = 50,
+        sellPrice = 35, -- 70% of value
+        buyPrice = 65   -- 130% of value
     },
     
     {
@@ -44,7 +46,9 @@ local recipes = {
         category = "Weapons",
         unlockLevel = 3,
         craftTime = 600, -- 10 minutes
-        value = 120
+        value = 120,
+        sellPrice = 84,  -- 70% of value
+        buyPrice = 156   -- 130% of value
     },
     
     {
@@ -57,7 +61,9 @@ local recipes = {
         category = "Weapons",
         unlockLevel = 8,
         craftTime = 1200, -- 20 minutes
-        value = 500
+        value = 500,
+        sellPrice = 350, -- 70% of value
+        buyPrice = 650   -- 130% of value
     },
     
     -- ===== ARMOR =====
@@ -71,7 +77,9 @@ local recipes = {
         category = "Armor",
         unlockLevel = 4,
         craftTime = 900, -- 15 minutes
-        value = 200
+        value = 200,
+        sellPrice = 140, -- 70% of value
+        buyPrice = 260   -- 130% of value
     },
     
     {
@@ -84,7 +92,9 @@ local recipes = {
         category = "Armor",
         unlockLevel = 5,
         craftTime = 1800, -- 30 minutes
-        value = 300
+        value = 300,
+        sellPrice = 210, -- 70% of value
+        buyPrice = 390   -- 130% of value
     },
     
     -- ===== TOOLS =====
@@ -98,7 +108,9 @@ local recipes = {
         category = "Tools",
         unlockLevel = 2,
         craftTime = 450, -- 7.5 minutes
-        value = 75
+        value = 75,
+        sellPrice = 53,  -- 70% of value
+        buyPrice = 98    -- 130% of value
     },
     
     {
@@ -111,7 +123,9 @@ local recipes = {
         category = "Tools",
         unlockLevel = 6,
         craftTime = 720, -- 12 minutes
-        value = 180
+        value = 180,
+        sellPrice = 126, -- 70% of value
+        buyPrice = 234   -- 130% of value
     },
     
     -- ===== MAGIC ITEMS =====
@@ -125,7 +139,9 @@ local recipes = {
         category = "Magic",
         unlockLevel = 7,
         craftTime = 1500, -- 25 minutes
-        value = 800
+        value = 800,
+        sellPrice = 560, -- 70% of value
+        buyPrice = 1040  -- 130% of value
     },
     
     {
@@ -138,7 +154,9 @@ local recipes = {
         category = "Consumables",
         unlockLevel = 1,
         craftTime = 180, -- 3 minutes
-        value = 25
+        value = 25,
+        sellPrice = 18,  -- 70% of value
+        buyPrice = 33    -- 130% of value
     },
     
     {
@@ -151,7 +169,9 @@ local recipes = {
         category = "Magic",
         unlockLevel = 10,
         craftTime = 2400, -- 40 minutes
-        value = 1200
+        value = 1200,
+        sellPrice = 840, -- 70% of value
+        buyPrice = 1560  -- 130% of value
     }
 }
 
