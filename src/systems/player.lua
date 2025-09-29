@@ -19,6 +19,11 @@ function PlayerState:new()
         items = {} -- table of {name, quantity, description}
     }
     
+    -- Initialize player currency
+    instance.currency = {
+        gold = 0
+    }
+    
     return instance
 end
 
@@ -110,14 +115,46 @@ function PlayerState:onItemCrafted(recipe)
     end
 end
 
+-- Currency management methods
+function PlayerState:addGold(amount)
+    amount = amount or 0
+    if amount > 0 then
+        self.currency.gold = self.currency.gold + amount
+        print("PlayerState: Gained " .. amount .. " gold (total: " .. self.currency.gold .. ")")
+    end
+end
+
+function PlayerState:removeGold(amount)
+    amount = amount or 0
+    if amount > 0 and self.currency.gold >= amount then
+        self.currency.gold = self.currency.gold - amount
+        print("PlayerState: Spent " .. amount .. " gold (remaining: " .. self.currency.gold .. ")")
+        return true
+    elseif amount > 0 then
+        print("PlayerState: Not enough gold (have: " .. self.currency.gold .. ", need: " .. amount .. ")")
+        return false
+    end
+    return true
+end
+
+function PlayerState:getGold()
+    return self.currency.gold
+end
+
+function PlayerState:hasGold(amount)
+    return self.currency.gold >= (amount or 0)
+end
+
 -- Debug function to print all inventory contents
 function PlayerState:printInventory()
     print("=== Player Inventory ===")
+    print("Gold: " .. self.currency.gold)
+    print("Items:")
     if #self.inventory.items == 0 then
-        print("Inventory is empty")
+        print("  No items")
     else
         for i, item in ipairs(self.inventory.items) do
-            print(i .. ". " .. item.name .. " x" .. item.quantity .. " - " .. item.description)
+            print("  " .. i .. ". " .. item.name .. " x" .. item.quantity .. " - " .. item.description)
         end
     end
     print("========================")

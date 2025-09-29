@@ -59,6 +59,15 @@ function InventoryState:draw()
     
     -- Draw exit button (X button in top right)
     self:drawExitButton()
+    
+    -- Draw gold display in bottom right corner of screen
+    if _G.PlayerState then
+        love.graphics.setColor(1, 0.8, 0.2, 1) -- Golden color for gold
+        love.graphics.setFont(love.graphics.newFont(18))
+        local goldText = "Gold: " .. _G.PlayerState:getGold()
+        local goldWidth = love.graphics.getFont():getWidth(goldText)
+        love.graphics.print(goldText, width - goldWidth - 15, height - 30)
+    end
 end
 
 function InventoryState:drawExitButton()
@@ -211,7 +220,7 @@ function InventoryState:drawTabContent(contentX, contentY, contentWidth, content
             love.graphics.print(hintText, contentX + (contentWidth - hintWidth) / 2, contentY + 120)
         end
         
-        -- Instructions at bottom
+        -- Instructions at bottom left
         love.graphics.setColor(0.6, 0.6, 0.6, 1)
         love.graphics.setFont(love.graphics.newFont(14))
         local instructions = "Press 'I' to close • Click X to exit"
